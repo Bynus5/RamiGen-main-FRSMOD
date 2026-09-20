@@ -1,0 +1,74 @@
+
+# ============================================================
+# RamiGen Requirements
+# Python 3.11 | CUDA 12.6 | PyTorch 2.7.1
+# GPU: NVIDIA RTX 3090 (24 GB)
+#
+# Install PyTorch and FlashAttention separately.
+# ============================================================
+
+# Build tools
+setuptools==80.9.0
+wheel==0.47.0
+packaging==26.0
+psutil==7.2.2
+ninja==1.13.0
+
+# Distributed training and efficient fine-tuning
+deepspeed==0.17.6
+accelerate==0.29.3
+peft==0.10.0
+bitsandbytes==0.49.2
+hjson==3.1.0
+py-cpuinfo==9.0.0
+
+# Diffusion models and vision backbones
+diffusers==0.31.0
+transformers==4.39.1
+tokenizers==0.15.2
+huggingface-hub==0.23.5
+safetensors==0.8.0
+sentencepiece==0.1.99
+timm==0.9.5
+einops==0.7.0
+ftfy==6.3.1
+omegaconf==2.3.1
+regex==2026.7.10
+submitit==1.5.4
+termcolor==3.3.0
+torchmetrics==1.9.0
+
+# Data processing and numerical computing
+numpy==1.26.4
+scipy==1.15.3
+pandas==2.0.3
+pyarrow==16.1.0
+pillow==10.4.0
+opencv-python-headless==4.11.0.86
+scikit-learn==1.7.2
+PyYAML==6.0.3
+protobuf==3.20.3
+
+# Logging and visualization
+loguru==0.7.2
+tqdm==4.68.4
+requests==2.34.2
+matplotlib==3.10.9
+tensorboard==2.17.1
+
+# Web demo
+gradio==3.50.2
+fastapi==0.139.0
+uvicorn==0.51.0
+pydantic==2.13.4
+
+# ONNX utilities
+onnx==1.15.0
+onnxruntime-gpu==1.23.2
+
+# Optional NVIDIA deployment utilities:
+# onnx-graphsurgeon==0.3.27
+# polygraphy==0.47.1
+
+# Local dataset indexing package
+-e ./IndexKits
