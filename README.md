@@ -33,9 +33,6 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 \
 Clone the repository and install the required dependencies:
 
 ```bash
-git clone <RamiGen-repository-URL>
-cd RamiGen
-
 pip install -r requirements.txt
 ```
 
