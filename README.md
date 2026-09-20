@@ -61,33 +61,3 @@ pip install flash-attn==2.8.3 \
 ```
 
 Alternatively, install a prebuilt wheel compatible with the installed PyTorch, Python, CUDA, and system GLIBC versions.
-
-### 5. Verify Installation
-
-Run the following command to verify PyTorch and FlashAttention:
-
-```bash
-python - <<'PY'
-import torch
-from flash_attn import flash_attn_func
-
-print("PyTorch:", torch.__version__)
-print("CUDA:", torch.version.cuda)
-print("GPU:", torch.cuda.get_device_name(0))
-
-q = torch.randn(2, 128, 4, 64, device="cuda",
-                dtype=torch.float16, requires_grad=True)
-k = torch.randn_like(q, requires_grad=True)
-v = torch.randn_like(q, requires_grad=True)
-
-out = flash_attn_func(q, k, v)
-out.float().square().mean().backward()
-
-torch.cuda.synchronize()
-
-assert all(torch.isfinite(x).all() for x in
-           [out, q.grad, k.grad, v.grad])
-
-print("FlashAttention forward/backward: PASS")
-PY
-```
