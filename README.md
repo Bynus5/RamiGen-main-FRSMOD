@@ -1,7 +1,7 @@
 
 ## Environment Setup
 
-RamiGen is developed for NVIDIA GPUs and has been tested with the following environment.
+RamiGen is designed for NVIDIA GPUs. The recommended environment is as follows:
 
 | Component | Version |
 |-----------|---------|
@@ -30,23 +30,23 @@ pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 \
 
 ### 3. Install Dependencies
 
-Clone the repository and install the required packages:
+Clone the repository and install the required dependencies:
 
 ```bash
 git clone <RamiGen-repository-URL>
 cd RamiGen
 
-pip install --no-build-isolation -r requirements.txt
+pip install -r requirements.txt
 ```
 
-Ensure that `requirements.txt` does not reinstall a different PyTorch version.
+**Note:** PyTorch and FlashAttention are installed separately and should not be included in `requirements.txt`.
 
 ### 4. Install FlashAttention
 
-FlashAttention requires a compatible CUDA Toolkit and C++ compiler.
+FlashAttention requires CUDA Toolkit 12.6 and a compatible C++ compiler. Ensure that `nvcc` is available before installation.
 
 ```bash
-# Set CUDA Toolkit path if necessary
+# Configure CUDA Toolkit (adjust the path if necessary)
 export CUDA_HOME=/usr/local/cuda-12.6
 export PATH=$CUDA_HOME/bin:$PATH
 
@@ -54,16 +54,20 @@ export PATH=$CUDA_HOME/bin:$PATH
 export FLASH_ATTN_CUDA_ARCHS="86"
 export TORCH_CUDA_ARCH_LIST="8.6"
 
+# Build FlashAttention from source
 export FLASH_ATTENTION_FORCE_BUILD=TRUE
 export MAX_JOBS=4
 
 pip install flash-attn==2.8.3 \
-    --no-build-isolation --no-deps
+    --no-build-isolation \
+    --no-deps
 ```
 
-Alternatively, install a prebuilt FlashAttention wheel compatible with the installed PyTorch, Python, CUDA, and system GLIBC versions.
+Alternatively, install a prebuilt wheel compatible with the installed PyTorch, Python, CUDA, and system GLIBC versions.
 
 ### 5. Verify Installation
+
+Run the following command to verify PyTorch and FlashAttention:
 
 ```bash
 python - <<'PY'
@@ -74,18 +78,19 @@ print("PyTorch:", torch.__version__)
 print("CUDA:", torch.version.cuda)
 print("GPU:", torch.cuda.get_device_name(0))
 
-q = torch.randn(
-    2, 128, 4, 64,
-    device="cuda",
-    dtype=torch.float16,
-    requires_grad=True
-)
+q = torch.randn(2, 128, 4, 64, device="cuda",
+                dtype=torch.float16, requires_grad=True)
+k = torch.randn_like(q, requires_grad=True)
+v = torch.randn_like(q, requires_grad=True)
 
-out = flash_attn_func(q, q, q)
+out = flash_attn_func(q, k, v)
 out.float().square().mean().backward()
 
 torch.cuda.synchronize()
 
-print("RamiGen environment: PASS")
+assert all(torch.isfinite(x).all() for x in
+           [out, q.grad, k.grad, v.grad])
+
+print("FlashAttention forward/backward: PASS")
 PY
 ```
