@@ -19,7 +19,7 @@ conda create -n RamiGen python=3.11 -y
 conda activate RamiGen
 ```
 
-### 2. Install PyTorch
+### 2. Install PyTorch and Dependencies
 
 Install PyTorch with CUDA 12.6 support:
 
@@ -27,9 +27,6 @@ Install PyTorch with CUDA 12.6 support:
 pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 \
     --index-url https://download.pytorch.org/whl/cu126
 ```
-
-### 3. Install Dependencies
-
 Clone the repository and install the required dependencies:
 
 ```bash
@@ -38,9 +35,10 @@ pip install -r requirements.txt
 
 **Note:** PyTorch and FlashAttention are installed separately and should not be included in `requirements.txt`.
 
-### 4. Install FlashAttention
+### 3. Install FlashAttention
 
 FlashAttention requires CUDA Toolkit 12.6 and a compatible C++ compiler. Ensure that `nvcc` is available before installation.
+If you utilize the consumer-grade graphics card such as RTX 3090, RTX 4090, please install the FlashAttention to optimize the GPU memory. 
 
 ```bash
 # Configure CUDA Toolkit (adjust the path if necessary)
