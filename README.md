@@ -1,61 +1,267 @@
+# RamiGen
 
-## Environment Setup
+## Region-aware controllable diffusion with self-adaptive conditional evolution for instance-centric remote sensing object generation
 
-RamiGen is designed for NVIDIA GPUs. The recommended environment is as follows:
+**ISPRS Journal of Photogrammetry and Remote Sensing, 2026**
 
-| Component | Version |
-|-----------|---------|
-| GPU | NVIDIA RTX 3090 (24 GB) |
-| OS | Linux |
-| Python | 3.11 |
-| CUDA | 12.6 |
-| PyTorch | 2.7.1 |
-| FlashAttention | 2.8.3 |
+Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
 
-### 1. Create Environment
+[Paper](main.pdf) · [DOI](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
+
+[Overview](#overview) · [Installation](#installation) · [Data preparation](#data-preparation) · [Training](#training) · [Inference](#inference) · [Citation](#citation)
+
+## Overview
+
+RamiGen is a reference-guided diffusion framework for instance-centric object generation in optical and SAR remote sensing imagery. It uses reference images and bounding-box annotations to construct fine-grained spatial conditions, improving object geometry, placement, and appearance in sparse and dense scenes.
+
+- **RA2CEM** evolves coarse regional masks and constructs aligned mask, edge, and depth conditions. Its implementation is organized under `RACEM/`.
+- **SSAFormer** combines spatial positional encoding and semantic conditioning in the transformer backbone and conditional guidance network.
+- **Two-stage training** first adapts the image-generation backbone, then learns conditional guidance while keeping the backbone frozen.
+
+![RamiGen architecture](assets/overview.jpg)
+
+*Overall architecture from Fig. 3 of the paper.*
+
+### Main results
+
+Results reported in the paper, Tables 1–3; these are not measurements from the example commands below.
+
+| Dataset | FID ↓ | KID ↓ | YOLO Score ↑ |
+| --- | ---: | ---: | ---: |
+| DIOR | 37.586 | 0.011 | 0.3212 |
+| FRSMOD | 45.761 | 0.008 | 0.7319 |
+| SARDet-100K | 55.738 | 0.034 | 0.2371 |
+
+**Implementation note.** This codebase provides a LoRA-based first stage and a multi-scale fused ControlNet second stage. The current RACEM uses SAUGE + original SAM for edge, SAM2 + Level Set for mask, and MiDaS for depth; the edge backend is a replacement in this codebase. The paper's protocol uses 15 backbone epochs + 5 conditional epochs, a global batch of 24, and 30 sampling steps with CFG 6.5. The supplied scripts are configurable examples, not an unchanged copy of that protocol.
+
+## Installation
+
+Run all commands from the project root. The local development stack uses Linux, Python 3.10, PyTorch 2.8, CUDA 12.8, and FlashAttention 2.8.3. FlashAttention requires a compatible CUDA Toolkit (`nvcc`) and C++ compiler.
 
 ```bash
-conda create -n RamiGen python=3.11 -y
+git clone https://github.com/Bynus5/RamiGen-main-FRSMOD.git
+cd RamiGen-main-FRSMOD
+
+conda create -n RamiGen python=3.10 -y
 conda activate RamiGen
+
+pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -r RACEM/requirements.txt
+pip install timm==0.9.5 diffusers==0.31.0 transformers==4.39.1 peft==0.10.0 \
+  accelerate==0.29.3 sentencepiece==0.1.99 loguru==0.7.2 \
+  pandas==2.0.3 pyarrow==16.1.0 gradio==3.50.2 protobuf==3.20.3
+pip install deepspeed==0.17.6 bitsandbytes==0.49.2 ninja
+pip install flash-attn==2.8.3 --no-build-isolation
+pip install -e ./IndexKits
 ```
 
-### 2. Install PyTorch and Dependencies
+The root `requirements.txt` and `environment.yml` retain legacy deployment pins; use the installation sequence above for this stack. Paddle, ONNX, and TensorRT are not needed for the documented workflow.
 
-Install PyTorch with CUDA 12.6 support:
+## Pretrained weights
+
+Download the **native HunyuanDiT-v1.2 checkpoint**, VAE, text encoders, and tokenizers following [HunyuanDiT's download instructions](https://github.com/Tencent-Hunyuan/HunyuanDiT#-download-pretrained-models). Do not substitute the Diffusers-format model for the native checkpoint.
+
+```text
+ckpts/
+├── HunyuanDiT-v1.2/
+│   └── t2i/
+│       ├── model/pytorch_model_ema.pt
+│       ├── clip_text_encoder/
+│       ├── tokenizer/
+│       ├── mt5/
+│       └── sdxl-vae-fp16-fix/
+└── racem/
+    ├── sauge_vitb.pth
+    ├── sam_vit_b_01ec64.pth
+    ├── sam2.1_hiera_large.pt
+    └── dpt_beit_large_512.pt
+```
+
+| RACEM checkpoint | Source |
+| --- | --- |
+| `sauge_vitb.pth` | [SAUGE](https://github.com/Star-xing1/SAUGE), basic ViT-B checkpoint |
+| `sam_vit_b_01ec64.pth` | [Segment Anything](https://github.com/facebookresearch/segment-anything#model-checkpoints), original SAM ViT-B |
+| `sam2.1_hiera_large.pt` | [SAM2](https://github.com/facebookresearch/sam2#download-checkpoints), SAM2.1 Hiera-large |
+| `dpt_beit_large_512.pt` | [MiDaS](https://github.com/isl-org/MiDaS#setup), BEiT-large-512 |
+
+SAUGE requires the **original SAM** checkpoint; the SAM2 checkpoint is used separately for mask extraction.
 
 ```bash
-pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 \
-    --index-url https://download.pytorch.org/whl/cu126
+MODEL_ROOT=ckpts/HunyuanDiT-v1.2
 ```
-Clone the repository and install the required dependencies:
+
+Set `VAE_EMA_PATH`, `TEXT_ENCODER`, `TOKENIZER`, and `T5_ENCODER["MT5"]` in [ssadit/constants.py](ssadit/constants.py) to the corresponding directories above. Also update the first-stage script's `resume_module_root`. Dataset-specific RamiGen checkpoints are not bundled; use the checkpoints produced by your training runs.
+
+## Data preparation
+
+DIOR is used as the running example. For FRSMOD or SARDet-100K, replace the dataset paths and use the appropriate annotation format.
+
+```text
+dataset/porcelain_DIOR/
+├── images/0001.png
+├── labels/0001.txt
+├── csvfile/train.csv
+├── arrows/                       # generated from CSV
+├── jsons/porcelain.json           # training index
+├── conditions/                   # generated by RACEM
+│   ├── edge/edge_clip/0001.png
+│   ├── depth/depth_clip/0001.png
+│   └── mask/mask_clip/0001.png
+└── inference.jsonl               # inference records
+```
+
+Images and labels must have matching stems. Keep an empty `.txt` file for images without objects. Coordinates are normalized to `[0, 1]`:
+
+```text
+# OBB: class_id x1 y1 x2 y2 x3 y3 x4 y4
+# HBB: class_id center_x center_y width height
+```
+
+Use `obb` for OBB annotations or `hbb` for HBB annotations. Do not include comment lines in actual label files.
+
+### Image–text index
+
+Create `csvfile/train.csv` with the two required columns, `img_path` and `text_zh`. Use absolute image paths; `text_zh` is the caption column expected by the converter.
+
+```csv
+img_path,text_zh
+/absolute/path/dataset/porcelain_DIOR/images/0001.png,An overhead satellite image of vehicles on a paved surface.
+```
 
 ```bash
-pip install -r requirements.txt
+mkdir -p dataset/porcelain_DIOR/arrows dataset/porcelain_DIOR/jsons
+python ssadit/data_loader/csv2arrow.py \
+  dataset/porcelain_DIOR/csvfile/train.csv dataset/porcelain_DIOR/arrows 1
+idk base -c dataset/yamls/porcelain_dior.yaml \
+  -t dataset/porcelain_DIOR/jsons/porcelain.json
 ```
 
-**Note:** PyTorch and FlashAttention are installed separately and should not be included in `requirements.txt`.
+The supplied YAML filters images with width or height below 800 pixels. Adjust this filter for smaller images, especially SAR data.
 
-### 3. Install FlashAttention
+### RACEM conditions
 
-FlashAttention requires CUDA Toolkit 12.6 and a compatible C++ compiler. Ensure that `nvcc` is available before installation.
-If you utilize the consumer-grade graphics card such as RTX 3090, RTX 4090, please install the FlashAttention to optimize the GPU memory. 
+Edit the paths, device, features, and annotation type in [RACEM/RACEM_Level_Set.sh](RACEM/RACEM_Level_Set.sh), then run:
 
 ```bash
-# Configure CUDA Toolkit (adjust the path if necessary)
-export CUDA_HOME=/usr/local/cuda-12.6
-export PATH=$CUDA_HOME/bin:$PATH
-
-# Build for RTX 3090 (sm_86)
-export FLASH_ATTN_CUDA_ARCHS="86"
-export TORCH_CUDA_ARCH_LIST="8.6"
-
-# Build FlashAttention from source
-export FLASH_ATTENTION_FORCE_BUILD=TRUE
-export MAX_JOBS=4
-
-pip install flash-attn==2.8.3 \
-    --no-build-isolation \
-    --no-deps
+bash RACEM/RACEM_Level_Set.sh
 ```
 
-Alternatively, install a prebuilt wheel compatible with the installed PyTorch, Python, CUDA, and system GLIBC versions.
+Use `RACEM_FEATURES=(all)` for all conditions, `(edge)`, `(depth)`, or `(mask)` for a single condition, or `(edge depth)` for a combination.
+
+| `RACEM_REGION` | Edge/depth region |
+| --- | --- |
+| `full` | Entire image |
+| `bbox` | Inside annotated boxes |
+| `clip` | Inside the refined object mask |
+
+Output dimensions remain unchanged. Mask extraction always uses annotated boxes; `clip` also requires mask extraction when requesting only edge/depth. The default is `clip`. Use a new output directory when changing extractor settings.
+
+This entry point is **offline only** and processes images one at a time. Online extraction is integrated into the second-stage trainer below.
+
+## Training
+
+### Stage 1: backbone adaptation
+
+Edit [train_lora_with_fa_DIOR.sh](src/train/T2I/train_lora_with_fa_DIOR.sh): set `resume_module_root` to `ckpts/HunyuanDiT-v1.2/t2i/model/pytorch_model_ema.pt`, check `index_file` and `results_dir`, and replace `--include localhost:4` with your GPU IDs, such as `localhost:0`.
+
+```bash
+bash src/train/T2I/train_lora_with_fa_DIOR.sh
+```
+
+The example uses LoRA rank 48, batch size 3 per GPU, gradient accumulation 8, and a 5,000-step cap. Adjust the schedule for your dataset.
+
+Merge the saved LoRA **directory** into the same base checkpoint used for training. Replace `YOUR_STAGE1_RUN` and the checkpoint step with your actual run:
+
+```bash
+mkdir -p results/merge_model
+PYTHONPATH=. python src/merge.py \
+  --model DiT-g/2 --image-size 1024 --model-root "$MODEL_ROOT" \
+  --base-ckpt "$MODEL_ROOT/t2i/model/pytorch_model_ema.pt" \
+  --lora-ckpt log_EXP/YOUR_STAGE1_RUN/checkpoints/0005000.pt --rank 48 \
+  --qk-norm --rope-img base512 --rope-real \
+  --output-merge-path results/merge_model/DIOR_stage1.pt
+```
+
+### Stage 2: conditional guidance
+
+Edit [train_controlnet_DIOR_multi_condtional_features_fusion.sh](src/train/ControlNet/train_controlnet_DIOR_multi_condtional_features_fusion.sh):
+
+| Setting | Value for this example |
+| --- | --- |
+| `resume_module_root` | `results/merge_model/DIOR_stage1.pt`; must be a checkpoint **file**, not `ckpts/` |
+| `index_file` | `dataset/porcelain_DIOR/jsons/porcelain.json` |
+| `results_dir` | `log_EXP/ControlNet` |
+| `COND_BASE_DIR` / `SUB_TYPE` | `dataset/porcelain_DIOR/conditions` / `clip` for offline maps |
+| `--include localhost:0,2` | Replace with available GPU IDs, e.g. `localhost:0` |
+
+`USE_CONDITION_FUSION=1` combines edge(1) + depth(3) + mask(3) into a 7-channel input, then applies multi-scale fusion before one ControlNet. `control_type` is ignored in this mode. With `USE_CONDITION_FUSION=0`, `control_type` selects the original single-condition VAE path.
+
+**Offline conditions** — read the maps saved in the previous step:
+
+```bash
+RACEM_MODE=preprocess \
+  bash src/train/ControlNet/train_controlnet_DIOR_multi_condtional_features_fusion.sh
+```
+
+**Online conditions** — extract conditions from each training batch; offline training-map extraction can be skipped:
+
+```bash
+RACEM_MODE=batch_wise RACEM_LABEL_DIR=dataset/porcelain_DIOR/labels \
+  RACEM_REGION=clip RACEM_BBOX_TYPE=obb \
+  bash src/train/ControlNet/train_controlnet_DIOR_multi_condtional_features_fusion.sh
+```
+
+Online RACEM uses the trainer's per-GPU `batch_size` directly; there is no separate extractor batch size. Gradient accumulation does not enlarge each extraction batch. Extractors are frozen and reused per training process; gradients update the trainable fusion and ControlNet components.
+
+Keep the same RoPE configuration across training, merging, and inference. These examples use `base512`, which is a positional reference setting, not the image resolution.
+
+## Inference
+
+Extract conditions for the reference images with RACEM, keeping the same region setting and dataset-wide class ID set as training so semantic-mask colors stay consistent. Then create `dataset/porcelain_DIOR/inference.jsonl`. Each line contains a prompt and paths to the three condition maps, resolved from the project root:
+
+```json
+{"file_name":"0001","text":"An overhead satellite image of vehicles on a paved surface.","edge_path":"dataset/porcelain_DIOR/conditions/edge/edge_clip/0001.png","depth_path":"dataset/porcelain_DIOR/conditions/depth/depth_clip/0001.png","mask_path":"dataset/porcelain_DIOR/conditions/mask/mask_clip/0001.png"}
+```
+
+Use the merged stage-1 backbone and its paired stage-2 ControlNet. Replace `YOUR_STAGE2_RUN` and the checkpoint step with your actual run:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python sample_controlnet_multi.py \
+  --model-root "$MODEL_ROOT" --dit-weight results/merge_model/DIOR_stage1.pt \
+  --controlnet-weight log_EXP/ControlNet/YOUR_STAGE2_RUN/checkpoints/0000100.pt/mp_rank_00_model_states.pt \
+  --use-condition-fusion --condition-fusion-in-channels 7 \
+  --fusion-control-types edge depth mask --control-weight 1.0 \
+  --index-file dataset/porcelain_DIOR/inference.jsonl --results-dir results/inference/DIOR \
+  --image-size 1024 1024 --rope-img base512 --rope-real \
+  --sampler dpmms --infer-steps 30 --cfg-scale 6.5 --batch-size 1 \
+  --seed 42 --infer-mode fa --no-enhance
+```
+
+Generated PNG images and `meta.jsonl` are saved under `results/inference/DIOR/`. Fusion uses **one** ControlNet; do not combine it with `--multi-control`. Text-only batch generation is available via `sample_t2i_batch.py`. Full argument help:
+
+```bash
+python RACEM/RACEM_Level_Set.py --help
+PYTHONPATH=. python sample_controlnet_multi.py --help
+```
+
+## Citation
+
+If you use RamiGen in your research, please cite:
+
+```bibtex
+@article{yang2026ramigen,
+  title   = {RamiGen: region-aware controllable diffusion with self-adaptive conditional evolution for instance-centric remote sensing object generation},
+  author  = {Yang, Yueheng and Wang, Bin and Ran, Wenyan and Zhou, Ning and Zhou, Minting and Wang, Jindi and Sui, Haigang},
+  journal = {ISPRS Journal of Photogrammetry and Remote Sensing},
+  volume  = {242},
+  pages   = {1039--1066},
+  year    = {2026},
+  doi     = {10.1016/j.isprsjprs.2026.09.048}
+}
+```
+
+## Acknowledgements
+
+The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [SAUGE](https://github.com/Star-xing1/SAUGE), [Segment Anything](https://github.com/facebookresearch/segment-anything), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses in the vendored code and follow each model's usage terms.
+
+Related remote-sensing generation projects: [OF-Diff](https://github.com/VisionXLab/OF-Diff), [AeroGen](https://github.com/Sonettoo/AeroGen), and [MMDiff](https://github.com/XinR-Tang/MMDiff).
