@@ -6,8 +6,8 @@
 
 Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
 
-[Paper-DOI](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
-
+[Paper](https://doi.org/10.1016/j.isprsjprs.2026.09.048) \
+[Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)\
 [Overview](#overview) \
 [Installation](#installation) \
 [Data preparation](#data-preparation) \
@@ -20,8 +20,6 @@ Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Hai
 - [√] Prepare the initial inference code and RACEM processing.
 - [√] Release pretrained models and weights on Hugging Face.
 - [ ] Release the training code.
-
-The initial release focuses on inference and offline RACEM preprocessing. Training code will be released later.
 
 ## Overview
 <img width="1228" height="1000" alt="Fig 2_small" src="https://github.com/user-attachments/assets/d9305cc3-16e1-4780-8e90-a0fd24c33942" />
