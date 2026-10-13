@@ -1,6 +1,4 @@
-# RamiGen
-
-## Region-aware controllable diffusion with self-adaptive conditional evolution for instance-centric remote sensing object generation
+# RamiGen: Region-aware controllable diffusion with self-adaptive conditional evolution for instance-centric remote sensing object generation
 
 **ISPRS Journal of Photogrammetry and Remote Sensing, 2026**
 
