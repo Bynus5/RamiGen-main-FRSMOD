@@ -6,13 +6,20 @@
 
 Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
 
-[Paper](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
+[Paper-DOI](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
 
-[Overview](#overview) · 
-[Installation](#installation) · 
-[Data preparation](#data-preparation) · 
-[Inference](#inference) · 
+[Overview](#overview) \
+[Installation](#installation) \
+[Data preparation](#data-preparation) \
+[Inference](#inference) \
 [Citation](#citation)
+
+## 📝 TODOs
+
+- [√] Publish the paper in ISPRS Journal of Photogrammetry and Remote Sensing.
+- [√] Prepare the initial inference code and RACEM processing.
+- [√] Release pretrained models and weights on Hugging Face.
+- [ ] Release the training code.
 
 The initial release focuses on inference and offline RACEM preprocessing. Training code will be released later.
 
@@ -43,19 +50,27 @@ Results reported in the paper, Tables 1–3; these are not measurements from the
 
 ## Installation
 
-Run all commands from the project root. The local development stack uses Linux, Python 3.10, PyTorch 2.8, CUDA 12.8, and FlashAttention 2.8.3. FlashAttention requires a compatible CUDA Toolkit (`nvcc`) and C++ compiler.
+Run all commands from the project root. The tested local stack is Ubuntu 20.04, Python 3.10, PyTorch 2.8.0 + TorchVision 0.23.0 (`cu128`), and Paddle GPU 2.6.2 for HED. `requirements.txt` pins the inference/RACEM dependencies; `environment.yml` uses the same file.
 
 ```bash
 git clone https://github.com/Bynus5/RamiGen-main-FRSMOD.git
 cd RamiGen-main-FRSMOD
 
-conda create -n RamiGen python=3.10 -y
+conda env create -f environment.yml
 conda activate RamiGen
 
-pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-pip install flash-attn==2.8.3 --no-build-isolation
+# Install after PyTorch; requires a compatible CUDA Toolkit (nvcc) and C++ compiler.
+python -m pip install flash-attn==2.8.3 --no-build-isolation
+python -m pip check
 ```
+
+For an existing Python 3.10 environment, activate it and run `python -m pip install -r requirements.txt` instead of creating another environment. The example inference command uses FlashAttention (`--infer-mode fa`); `--infer-mode torch` does not require the FlashAttention installation.
+
+Keep PyTorch's CUDA 12.8 libraries unchanged; HED uses Paddle's CUDA 11.8 build. Their same-process GPU extraction has been tested locally, but other systems should verify their driver/library setup. Do not install both CPU and GPU Paddle packages or replace these pins with a full Windows environment export. The NVIDIA driver and CUDA Toolkit are not installed by the environment files. See the [official PyTorch wheel instructions](https://pytorch.org/get-started/previous-versions/) and [FlashAttention build requirements](https://github.com/Dao-AILab/flash-attention#installation-and-features).
+
+DeepSpeed `0.17.6` is included because the shared argument parser imports it even during inference; this does not launch training. Training code remains outside the initial release.
+
+ONNX/TensorRT tools are also excluded from the default installation. Their locally installed versions are listed as optional comments in `requirements.txt`; they are not needed for `--infer-mode fa` or `torch`. TensorRT requires its own platform-specific setup.
 
 ## Pretrained weights
 
@@ -74,18 +89,18 @@ ckpts/
 │   ├── DIOR_backbone.pt          # paired RamiGen backbone
 │   └── DIOR_controlnet.pt        # paired RamiGen ControlNet
 └── racem/
-    ├── sauge_vitb.pth
-    ├── sam_vit_b_01ec64.pth
+    ├── model_hed.pdparams
     ├── sam2.1_hiera_large.pt
     └── dpt_beit_large_512.pt
 ```
 
 | RACEM checkpoint | Source |
 | --- | --- |
-| `sauge_vitb.pth` | [SAUGE](https://github.com/Star-xing1/SAUGE), basic ViT-B checkpoint |
-| `sam_vit_b_01ec64.pth` | [Segment Anything](https://github.com/facebookresearch/segment-anything#model-checkpoints), original SAM ViT-B |
+| `model_hed.pdparams` | [Paddle HED](https://github.com/txyugood/hed), trained HED checkpoint |
 | `sam2.1_hiera_large.pt` | [SAM2](https://github.com/facebookresearch/sam2#download-checkpoints), SAM2.1 Hiera-large |
 | `dpt_beit_large_512.pt` | [MiDaS](https://github.com/isl-org/MiDaS#setup), BEiT-large-512 |
+
+Edge extraction uses the supplied Paddle HED implementation with scales `0.5 / 1.0 / 1.5`; no original-SAM edge checkpoint is needed. Paddle GPU 2.6.2 runs alongside the existing PyTorch environment; do not install the CPU-only Paddle package at the same time.
 
 
 Set the native model root for the commands below:
@@ -199,7 +214,7 @@ The script saves PNG condition maps using the original image stem, e.g. `00001.j
 | `bbox` | Inside annotated boxes |
 | `clip` | Inside the refined mask |
 
-Output dimensions stay unchanged; mask extraction always uses annotated boxes. `clip` needs the mask backend even for edge/depth-only extraction. Changing the region changes directory suffixes (`edge_clip` → `edge_bbox`, etc.); update inference paths accordingly. Use a new output directory when changing extraction settings.
+Output dimensions stay unchanged; mask extraction always uses annotated boxes. `clip` needs the mask backend even for edge/depth-only extraction. Changing the region changes directory suffixes (`edge_clip` → `edge_bbox`, etc.); update inference paths accordingly. Use a new output directory when changing extraction settings. Existing SAUGE edge maps are not converted automatically: regenerate conditions in a new directory (e.g. `conditions_hed`) before using HED outputs.
 
 ### 4. Online conditions
 
@@ -263,16 +278,11 @@ If you use RamiGen in your research, please cite:
 }
 ```
 
-## 📝 TODOs
-
-- [√] Publish the paper in ISPRS Journal of Photogrammetry and Remote Sensing.
-- [√] Prepare the initial inference code and RACEM preprocessing.
-- [√] Release pretrained weights on Hugging Face.
-- [ ] Release the training code.
-
 
 ## Acknowledgements
 
-The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [SAUGE](https://github.com/Star-xing1/SAUGE), [Segment Anything](https://github.com/facebookresearch/segment-anything), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses in the vendored code and follow each model's usage terms.
+The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [Paddle HED](https://github.com/txyugood/hed), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses and follow each model's usage terms.
 
 Related remote-sensing generation projects: [OF-Diff](https://github.com/VisionXLab/OF-Diff), [AeroGen](https://github.com/Sonettoo/AeroGen), and [MMDiff](https://github.com/XinR-Tang/MMDiff).
+
+
