@@ -263,12 +263,6 @@ If you use RamiGen in your research, please cite:
 }
 ```
 
-## Acknowledgements
-
-The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [SAUGE](https://github.com/Star-xing1/SAUGE), [Segment Anything](https://github.com/facebookresearch/segment-anything), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses in the vendored code and follow each model's usage terms.
-
-Related remote-sensing generation projects: [OF-Diff](https://github.com/VisionXLab/OF-Diff), [AeroGen](https://github.com/Sonettoo/AeroGen), and [MMDiff](https://github.com/XinR-Tang/MMDiff).
-
 ## 📝 TODOs
 
 - [√] Publish the paper in ISPRS Journal of Photogrammetry and Remote Sensing.
@@ -276,3 +270,9 @@ Related remote-sensing generation projects: [OF-Diff](https://github.com/VisionX
 - [√] Release pretrained weights on Hugging Face.
 - [ ] Release the training code.
 
+
+## Acknowledgements
+
+The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [SAUGE](https://github.com/Star-xing1/SAUGE), [Segment Anything](https://github.com/facebookresearch/segment-anything), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses in the vendored code and follow each model's usage terms.
+
+Related remote-sensing generation projects: [OF-Diff](https://github.com/VisionXLab/OF-Diff), [AeroGen](https://github.com/Sonettoo/AeroGen), and [MMDiff](https://github.com/XinR-Tang/MMDiff).
