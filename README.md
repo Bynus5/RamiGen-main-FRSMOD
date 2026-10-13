@@ -44,6 +44,8 @@ Results reported in the paper, Tables 1–3; these are not measurements from the
 | FRSMOD | 45.761 | 0.008 | 0.7319 |
 | SARDet-100K | 55.738 | 0.034 | 0.2371 |
 
+<img width="886" height="761" alt="图片1" src="https://github.com/user-attachments/assets/44e30cfe-c8a4-4975-a802-b363d8375551" />
+
 
 ## Installation
 
