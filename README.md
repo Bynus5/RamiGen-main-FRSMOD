@@ -261,7 +261,7 @@ python RACEM/RACEM_Level_Set.py --help
 PYTHONPATH=. python sample_controlnet_multi.py --help
 ```
 
-## Citation
+## :sunrise:Citation
 
 If you use RamiGen in your research, please cite:
 
@@ -277,7 +277,7 @@ If you use RamiGen in your research, please cite:
 }
 ```
 
-## Acknowledgements
+## :airplane:Acknowledgements
 
 The implementation builds on [HunyuanDiT](https://github.com/Tencent-Hunyuan/HunyuanDiT), [Paddle HED](https://github.com/txyugood/hed), [SAM2](https://github.com/facebookresearch/sam2), and [MiDaS](https://github.com/isl-org/MiDaS). Preserve upstream licenses and follow each model's usage terms.
 
