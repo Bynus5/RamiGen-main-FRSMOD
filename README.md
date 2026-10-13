@@ -16,8 +16,11 @@ Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Hai
 [Citation](#citation)
 
 ## Overview
+<img width="1755" height="1429" alt="Fig 2_small" src="https://github.com/user-attachments/assets/d9305cc3-16e1-4780-8e90-a0fd24c33942" />
 
 RamiGen is a diffusion framework for instance-centric object generation in optical and SAR remote sensing imagery. It uses bounding-box annotations as regional prompt to construct fine-grained spatial conditions, improving object geometry, placement, and appearance in sparse and dense scenes.
+
+
 
 [RamiGen architecture]
 <img width="2129" height="1331" alt="overview" src="https://github.com/user-attachments/assets/a4cdf1d9-328e-4393-9a5c-d82b31330331" />
@@ -36,8 +39,6 @@ Results reported in the paper, Tables 1–3; these are not measurements from the
 
 
 
-**Implementation note.** This codebase provides a LoRA-based first stage and a multi-scale fused ControlNet second stage. The current RACEM uses SAUGE + original SAM for edge, SAM2 + Level Set for mask, and MiDaS for depth; the edge backend is a replacement in this codebase. The paper's protocol uses 15 backbone epochs + 5 conditional epochs, a global batch of 24, and 30 sampling steps with CFG 6.5. The supplied scripts are configurable examples, not an unchanged copy of that protocol.
-
 ## Installation
 
 Run all commands from the project root. The local development stack uses Linux, Python 3.10, PyTorch 2.8, CUDA 12.8, and FlashAttention 2.8.3. FlashAttention requires a compatible CUDA Toolkit (`nvcc`) and C++ compiler.
@@ -50,20 +51,14 @@ conda create -n RamiGen python=3.10 -y
 conda activate RamiGen
 
 pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r RACEM/requirements.txt
-pip install timm==0.9.5 diffusers==0.31.0 transformers==4.39.1 peft==0.10.0 \
-  accelerate==0.29.3 sentencepiece==0.1.99 loguru==0.7.2 \
-  pandas==2.0.3 pyarrow==16.1.0 gradio==3.50.2 protobuf==3.20.3
-pip install deepspeed==0.17.6 bitsandbytes==0.49.2 ninja
+pip install -r requirements.txt
 pip install flash-attn==2.8.3 --no-build-isolation
 pip install -e ./IndexKits
 ```
 
-The root `requirements.txt` and `environment.yml` retain legacy deployment pins; use the installation sequence above for this stack. Paddle, ONNX, and TensorRT are not needed for the documented workflow.
-
 ## Pretrained weights
 
-Download the **native HunyuanDiT-v1.2 checkpoint**, VAE, text encoders, and tokenizers following [HunyuanDiT's download instructions](https://github.com/Tencent-Hunyuan/HunyuanDiT#-download-pretrained-models). Do not substitute the Diffusers-format model for the native checkpoint.
+Download the **HunyuanDiT-v1.2 checkpoint**, VAE, text encoders, and tokenizers following [HunyuanDiT's download instructions](https://github.com/Tencent-Hunyuan/HunyuanDiT#-download-pretrained-models).
 
 ```text
 ckpts/
@@ -88,16 +83,8 @@ ckpts/
 | `sam2.1_hiera_large.pt` | [SAM2](https://github.com/facebookresearch/sam2#download-checkpoints), SAM2.1 Hiera-large |
 | `dpt_beit_large_512.pt` | [MiDaS](https://github.com/isl-org/MiDaS#setup), BEiT-large-512 |
 
-SAUGE requires the **original SAM** checkpoint; the SAM2 checkpoint is used separately for mask extraction.
-
-```bash
-MODEL_ROOT=ckpts/HunyuanDiT-v1.2
-```
-
-Set `VAE_EMA_PATH`, `TEXT_ENCODER`, `TOKENIZER`, and `T5_ENCODER["MT5"]` in [ssadit/constants.py](ssadit/constants.py) to the corresponding directories above. Also update the first-stage script's `resume_module_root`. Dataset-specific RamiGen checkpoints are not bundled; use the checkpoints produced by your training runs.
 
 ## Data preparation
-
 DIOR is used as the running example. For FRSMOD or SARDet-100K, replace the dataset paths and use the appropriate annotation format.
 
 ```text
@@ -113,7 +100,6 @@ dataset/porcelain_DIOR/
 │   └── mask/mask_clip/0001.png
 └── inference.jsonl               # inference records
 ```
-
 Images and labels must have matching stems. Keep an empty `.txt` file for images without objects. Coordinates are normalized to `[0, 1]`:
 
 ```text
@@ -121,16 +107,9 @@ Images and labels must have matching stems. Keep an empty `.txt` file for images
 # HBB: class_id center_x center_y width height
 ```
 
-Use `obb` for OBB annotations or `hbb` for HBB annotations. Do not include comment lines in actual label files.
-
 ### Image–text index
 
 Create `csvfile/train.csv` with the two required columns, `img_path` and `text_zh`. Use absolute image paths; `text_zh` is the caption column expected by the converter.
-
-```csv
-img_path,text_zh
-/absolute/path/dataset/porcelain_DIOR/images/0001.png,An overhead satellite image of vehicles on a paved surface.
-```
 
 ```bash
 mkdir -p dataset/porcelain_DIOR/arrows dataset/porcelain_DIOR/jsons
@@ -162,31 +141,9 @@ Output dimensions remain unchanged. Mask extraction always uses annotated boxes;
 
 This entry point is **offline only** and processes images one at a time. Online extraction is integrated into the second-stage trainer below.
 
-## Training
+## Quickly start
 
-### Stage 1: backbone adaptation
-
-Edit [train_lora_with_fa_DIOR.sh](src/train/T2I/train_lora_with_fa_DIOR.sh): set `resume_module_root` to `ckpts/HunyuanDiT-v1.2/t2i/model/pytorch_model_ema.pt`, check `index_file` and `results_dir`, and replace `--include localhost:4` with your GPU IDs, such as `localhost:0`.
-
-```bash
-bash src/train/T2I/train_lora_with_fa_DIOR.sh
-```
-
-The example uses LoRA rank 48, batch size 3 per GPU, gradient accumulation 8, and a 5,000-step cap. Adjust the schedule for your dataset.
-
-Merge the saved LoRA **directory** into the same base checkpoint used for training. Replace `YOUR_STAGE1_RUN` and the checkpoint step with your actual run:
-
-```bash
-mkdir -p results/merge_model
-PYTHONPATH=. python src/merge.py \
-  --model DiT-g/2 --image-size 1024 --model-root "$MODEL_ROOT" \
-  --base-ckpt "$MODEL_ROOT/t2i/model/pytorch_model_ema.pt" \
-  --lora-ckpt log_EXP/YOUR_STAGE1_RUN/checkpoints/0005000.pt --rank 48 \
-  --qk-norm --rope-img base512 --rope-real \
-  --output-merge-path results/merge_model/DIOR_stage1.pt
-```
-
-### Stage 2: conditional guidance
+### multi-conditional guidance produce
 
 Edit [train_controlnet_DIOR_multi_condtional_features_fusion.sh](src/train/ControlNet/train_controlnet_DIOR_multi_condtional_features_fusion.sh):
 
