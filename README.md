@@ -230,7 +230,7 @@ The trainer reads images/captions from Arrow, aligns labels with resize/crop/fli
 
 To read offline maps instead, use `RACEM_MODE=preprocess`, `COND_BASE_DIR=dataset/porcelain_DIOR/conditions`, and `SUB_TYPE=clip` matching the directory suffix. The current inference entry always reads saved maps, so prepare offline conditions for inference even if training used online extraction.
 
-## Inference
+## :golf:Inference
 
 Extract conditions for the reference images with RACEM, matching the region setting and dataset-wide class ID set used by your checkpoints so semantic-mask colors stay consistent. Then create `dataset/porcelain_DIOR/inference_jsonl/test.jsonl`. Each line contains a prompt and paths to the three condition maps, resolved from the project root:
 
