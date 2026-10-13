@@ -6,21 +6,23 @@
 
 Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
 
-[Paper](main.pdf) · [DOI](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
+[Paper-DOI](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD)
 
-[Overview](#overview) · [Installation](#installation) · [Data preparation](#data-preparation) · [Training](#training) · [Inference](#inference) · [Citation](#citation)
+[Overview](#overview) · 
+[Installation](#installation) · 
+[Data preparation](#data-preparation) · 
+[Training](#training) · 
+[Inference](#inference) · 
+[Citation](#citation)
 
 ## Overview
 
-RamiGen is a reference-guided diffusion framework for instance-centric object generation in optical and SAR remote sensing imagery. It uses reference images and bounding-box annotations to construct fine-grained spatial conditions, improving object geometry, placement, and appearance in sparse and dense scenes.
+RamiGen is a diffusion framework for instance-centric object generation in optical and SAR remote sensing imagery. It uses bounding-box annotations as regional prompt to construct fine-grained spatial conditions, improving object geometry, placement, and appearance in sparse and dense scenes.
 
-- **RA2CEM** evolves coarse regional masks and constructs aligned mask, edge, and depth conditions. Its implementation is organized under `RACEM/`.
-- **SSAFormer** combines spatial positional encoding and semantic conditioning in the transformer backbone and conditional guidance network.
-- **Two-stage training** first adapts the image-generation backbone, then learns conditional guidance while keeping the backbone frozen.
+[RamiGen architecture]
+<img width="2129" height="1331" alt="overview" src="https://github.com/user-attachments/assets/a4cdf1d9-328e-4393-9a5c-d82b31330331" />
 
-![RamiGen architecture](assets/overview.jpg)
 
-*Overall architecture from Fig. 3 of the paper.*
 
 ### Main results
 
@@ -31,6 +33,8 @@ Results reported in the paper, Tables 1–3; these are not measurements from the
 | DIOR | 37.586 | 0.011 | 0.3212 |
 | FRSMOD | 45.761 | 0.008 | 0.7319 |
 | SARDet-100K | 55.738 | 0.034 | 0.2371 |
+
+
 
 **Implementation note.** This codebase provides a LoRA-based first stage and a multi-scale fused ControlNet second stage. The current RACEM uses SAUGE + original SAM for edge, SAM2 + Level Set for mask, and MiDaS for depth; the edge backend is a replacement in this codebase. The paper's protocol uses 15 backbone epochs + 5 conditional epochs, a global batch of 24, and 30 sampling steps with CFG 6.5. The supplied scripts are configurable examples, not an unchanged copy of that protocol.
 
