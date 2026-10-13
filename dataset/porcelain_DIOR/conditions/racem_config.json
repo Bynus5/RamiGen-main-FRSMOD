@@ -1,0 +1,95 @@
+{
+  "features": [
+    "edge",
+    "depth",
+    "mask"
+  ],
+  "region": "clip",
+  "bbox_type": "obb",
+  "weights": {
+    "mask": "/home/yyh/Desktop/research/RamiGen-main-FRSMOD/ckpts/racem/sam2.1_hiera_large.pt",
+    "edge": "/home/yyh/Desktop/research/RamiGen-main-FRSMOD/ckpts/racem/sauge_vitb.pth",
+    "depth": "/home/yyh/Desktop/research/RamiGen-main-FRSMOD/ckpts/racem/dpt_beit_large_512.pt",
+    "edge_sam": "/home/yyh/Desktop/research/RamiGen-main-FRSMOD/ckpts/racem/sam_vit_b_01ec64.pth"
+  },
+  "class_colors_bgr": {
+    "0": [
+      55,
+      55,
+      255
+    ],
+    "3": [
+      55,
+      135,
+      255
+    ],
+    "5": [
+      55,
+      215,
+      255
+    ],
+    "6": [
+      55,
+      255,
+      215
+    ],
+    "7": [
+      55,
+      255,
+      135
+    ],
+    "8": [
+      55,
+      255,
+      55
+    ],
+    "9": [
+      135,
+      255,
+      55
+    ],
+    "10": [
+      215,
+      255,
+      55
+    ],
+    "11": [
+      255,
+      215,
+      55
+    ],
+    "13": [
+      255,
+      135,
+      55
+    ],
+    "14": [
+      255,
+      55,
+      55
+    ],
+    "15": [
+      255,
+      55,
+      135
+    ],
+    "16": [
+      255,
+      55,
+      215
+    ],
+    "17": [
+      215,
+      55,
+      255
+    ],
+    "18": [
+      135,
+      55,
+      255
+    ]
+  },
+  "mask": "SAM2.1 large + original safe level-set defaults",
+  "edge": "SAUGE ViT-B + original SAM ViT-B; final fused probability",
+  "depth": "MiDaS dpt_beit_large_512 + INFERNO"
+}

@@ -1,0 +1,15 @@
+source:
+  - ./dataset/porcelain_DIOR/arrows/*.arrow
+
+filter:
+  column:
+    - name: height
+      type: int
+      action: ge
+      target: 800
+      default: 800
+    - name: width
+      type: int
+      action: ge
+      target: 800
+      default: 800

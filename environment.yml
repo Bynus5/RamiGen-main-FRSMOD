@@ -1,0 +1,10 @@
+name: RamiGen
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  # One dependency source for inference and RACEM, including CUDA 12.8 PyTorch wheels.
+  # Run from the project root. Install FlashAttention separately after PyTorch.
+  - pip:
+      - -r requirements.txt

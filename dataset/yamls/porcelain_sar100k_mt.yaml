@@ -1,0 +1,6 @@
+
+src:
+    - ./dataset/porcelain_sar100k_mini/jsons/porcelain.json
+base_size: 512
+reso_step: 64
+min_size: 1

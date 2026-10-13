@@ -1,0 +1,32 @@
+# Model weights
+*.pt
+*.pth
+*.ckpt
+*.pdparams
+*.safetensors
+*.onnx
+
+# Generated files
+/results/
+/log_EXP/
+**/__pycache__/
+*.pyc
+*.log
+*.egg-info/
+build/
+dist/
+*.arrow
+
+# Large local paper
+/main.pdf
+
+# Credentials
+.env
+.env.*
+*.pem
+*.key
+
+# Initial release: inference only
+/src/train/
+/ssadit/train*
+/ssadit/run_g_ipadapter.sh
