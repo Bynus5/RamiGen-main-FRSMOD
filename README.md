@@ -16,14 +16,14 @@ Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Hai
 [Citation](#citation)
 
 ## Overview
-<img width="1755" height="1429" alt="Fig 2_small" src="https://github.com/user-attachments/assets/d9305cc3-16e1-4780-8e90-a0fd24c33942" />
+<img width="1228" height="1000" alt="Fig 2_small" src="https://github.com/user-attachments/assets/d9305cc3-16e1-4780-8e90-a0fd24c33942" />
 
 RamiGen is a diffusion framework for instance-centric object generation in optical and SAR remote sensing imagery. It uses bounding-box annotations as regional prompt to construct fine-grained spatial conditions, improving object geometry, placement, and appearance in sparse and dense scenes.
 
 
 
 [RamiGen architecture]
-<img width="2129" height="1331" alt="overview" src="https://github.com/user-attachments/assets/a4cdf1d9-328e-4393-9a5c-d82b31330331" />
+<img width="1488" height="932" alt="overview" src="https://github.com/user-attachments/assets/a4cdf1d9-328e-4393-9a5c-d82b31330331" />
 
 
 
@@ -37,8 +37,7 @@ Results reported in the paper, Tables 1–3; these are not measurements from the
 | FRSMOD | 45.761 | 0.008 | 0.7319 |
 | SARDet-100K | 55.738 | 0.034 | 0.2371 |
 
-<img width="2830" height="1111" alt="Fig 3_small" src="https://github.com/user-attachments/assets/0d721fc0-5bba-48d3-b2e6-3beb06bb310c" />
-
+<img width="1981" height="778" alt="Fig 3_small" src="https://github.com/user-attachments/assets/0d721fc0-5bba-48d3-b2e6-3beb06bb310c" />
 
 
 ## Installation
