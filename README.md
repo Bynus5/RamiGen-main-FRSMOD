@@ -73,14 +73,14 @@ ONNX/TensorRT tools are also excluded from the default installation. Their local
 
 ## Pretrained weights
 
-The released **RamiGen DIOR backbone and ControlNet checkpoints**, together with the **HunyuanDiT-v1.2 base model, VAE, text encoders, and tokenizers**, are available from the [RamiGen pretrained checkpoints on Hugging Face](https://huggingface.co/Byuns5/RamiGen_Pretrained_checkpoint). You do not need to download the HunyuanDiT base weights separately.
+The released **RamiGen DIOR backbone and ControlNet checkpoints**, together with the VAE, text encoders, and tokenizers**, are available from the [RamiGen pretrained checkpoints on Hugging Face](https://huggingface.co/Byuns5/RamiGen_Pretrained_checkpoint). 
 
 Run the following commands from the project root to download the complete checkpoint repository:
 
 ```bash
 python -m pip install -U huggingface_hub
 hf download Byuns5/RamiGen_Pretrained_checkpoint \
-  --local-dir ckpts/HunyuanDiT-v1.2
+  --local-dir ckpts/RamiGen_component
 ```
 
 For the **DIOR inference example only**, you can omit the unused `dialoggen/` and `asset/` files to reduce the download size:
@@ -88,7 +88,7 @@ For the **DIOR inference example only**, you can omit the unused `dialoggen/` an
 ```bash
 hf download Byuns5/RamiGen_Pretrained_checkpoint \
   --include "t2i/*" "Pretrained_weights/DIOR_weights/*" \
-  --local-dir ckpts/HunyuanDiT-v1.2
+  --local-dir ckpts/RamiGen_component
 ```
 
 Both commands preserve the original folder hierarchy on Hugging Face. The relevant checkpoint paths are:
@@ -114,7 +114,7 @@ ckpts/
     └── dpt_beit_large_512.pt
 ```
 
-**RACEM checkpoint files:** The current Hugging Face repository contains the HunyuanDiT assets and RamiGen DIOR weights listed above, but its published file tree does not list the three separate RACEM extraction checkpoints. For offline condition preprocessing, place those files in `ckpts/racem/` using the corresponding upstream sources:
+**RACEM checkpoint files:** The current Hugging Face repository contains the and RamiGen DIOR weights listed above, but its published file tree does not list the three separate RACEM extraction checkpoints. For offline condition preprocessing, place those files in `ckpts/racem/` using the corresponding upstream sources:
 
 | RACEM checkpoint | Source |
 | --- | --- |
@@ -127,7 +127,7 @@ Edge extraction uses the supplied Paddle HED implementation with scales `0.5 / 1
 Set the native model root for the commands below:
 
 ```bash
-MODEL_ROOT=ckpts/HunyuanDiT-v1.2
+MODEL_ROOT=ckpts/
 ```
 
 The released DIOR backbone and ControlNet checkpoints are located at `"$MODEL_ROOT/Pretrained_weights/DIOR_weights/"` and are referenced directly in the inference example below. Use a matching checkpoint pair and RoPE configuration when replacing them with your own models.
