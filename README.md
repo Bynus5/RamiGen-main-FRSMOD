@@ -4,13 +4,13 @@
 
 Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
 
-[Paper](https://doi.org/10.1016/j.isprsjprs.2026.09.048) \
-[Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD) \
+[Paper](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · \
+[Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD) · \
 [Overview](#overview) · \
 [Installation](#installation) · \
 [Data preparation](#data-preparation) · \
 [Inference](#inference) · \
-[Citation](#citation)
+[Citation](#citation) · \
 
 ## 📝 TODOs
 
@@ -73,25 +73,48 @@ ONNX/TensorRT tools are also excluded from the default installation. Their local
 
 ## Pretrained weights
 
-Download the **HunyuanDiT-v1.2 checkpoint**, VAE, text encoders, and tokenizers following [HunyuanDiT's download instructions](https://github.com/Tencent-Hunyuan/HunyuanDiT#-download-pretrained-models).
+The released **RamiGen DIOR backbone and ControlNet checkpoints**, together with the **HunyuanDiT-v1.2 base model, VAE, text encoders, and tokenizers**, are available from the [RamiGen pretrained checkpoints on Hugging Face](https://huggingface.co/Byuns5/RamiGen_Pretrained_checkpoint). You do not need to download the HunyuanDiT base weights separately.
+
+Run the following commands from the project root to download the complete checkpoint repository:
+
+```bash
+python -m pip install -U huggingface_hub
+hf download Byuns5/RamiGen_Pretrained_checkpoint \
+  --local-dir ckpts/HunyuanDiT-v1.2
+```
+
+For the **DIOR inference example only**, you can omit the unused `dialoggen/` and `asset/` files to reduce the download size:
+
+```bash
+hf download Byuns5/RamiGen_Pretrained_checkpoint \
+  --include "t2i/*" "Pretrained_weights/DIOR_weights/*" \
+  --local-dir ckpts/HunyuanDiT-v1.2
+```
+
+Both commands preserve the original folder hierarchy on Hugging Face. The relevant checkpoint paths are:
 
 ```text
 ckpts/
-├── HunyuanDiT-v1.2/
-│   └── t2i/
-│       ├── model/pytorch_model_ema.pt
-│       ├── clip_text_encoder/
-│       ├── tokenizer/
-│       ├── mt5/
-│       └── sdxl-vae-fp16-fix/
-├── ramigen/
-│   ├── DIOR_backbone.pt          # paired RamiGen backbone
-│   └── DIOR_controlnet.pt        # paired RamiGen ControlNet
-└── racem/
+├── RamiGen_component/
+│   ├── t2i/
+│   │   ├── model/pytorch_model_ema.pt
+│   │   ├── clip_text_encoder/
+│   │   ├── tokenizer/
+│   │   ├── mt5/
+│   │   └── sdxl-vae-fp16-fix/
+│   ├── Pretrained_weights/
+│   │   └── DIOR_weights/
+│   │       ├── RamiGen_Backbone_DIOR.pt
+│   │       └── DIOR_ControlNet_0029300.pt
+│   ├── dialoggen/                   # complete repository download only
+│   └── asset/                       # complete repository download only
+└── racem/                           # offline condition-extraction weights (separate)
     ├── model_hed.pdparams
     ├── sam2.1_hiera_large.pt
     └── dpt_beit_large_512.pt
 ```
+
+**RACEM checkpoint files:** The current Hugging Face repository contains the HunyuanDiT assets and RamiGen DIOR weights listed above, but its published file tree does not list the three separate RACEM extraction checkpoints. For offline condition preprocessing, place those files in `ckpts/racem/` using the corresponding upstream sources:
 
 | RACEM checkpoint | Source |
 | --- | --- |
@@ -101,14 +124,14 @@ ckpts/
 
 Edge extraction uses the supplied Paddle HED implementation with scales `0.5 / 1.0 / 1.5`; no original-SAM edge checkpoint is needed. Paddle GPU 2.6.2 runs alongside the existing PyTorch environment; do not install the CPU-only Paddle package at the same time.
 
-
 Set the native model root for the commands below:
 
 ```bash
 MODEL_ROOT=ckpts/HunyuanDiT-v1.2
 ```
 
-Place a compatible RamiGen backbone and ControlNet checkpoint pair in `ckpts/ramigen/`, using the filenames shown above, or update the inference command with your own paths. RamiGen checkpoint download links will be added when the model weights are released; the native HunyuanDiT checkpoint alone is not sufficient for RamiGen conditional inference.
+The released DIOR backbone and ControlNet checkpoints are located at `"$MODEL_ROOT/Pretrained_weights/DIOR_weights/"` and are referenced directly in the inference example below. Use a matching checkpoint pair and RoPE configuration when replacing them with your own models.
+
 
 ## Data preparation
 
@@ -242,8 +265,9 @@ Use the paired RamiGen checkpoints prepared above. The example assumes a `base51
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python sample_controlnet_multi.py \
-  --model-root "$MODEL_ROOT" --dit-weight ckpts/ramigen/DIOR_backbone.pt \
-  --controlnet-weight ckpts/ramigen/DIOR_controlnet.pt \
+  --model-root "$MODEL_ROOT" \
+  --dit-weight "$MODEL_ROOT/Pretrained_weights/DIOR_weights/RamiGen_Backbone_DIOR.pt" \
+  --controlnet-weight "$MODEL_ROOT/Pretrained_weights/DIOR_weights/DIOR_ControlNet_0029300.pt" \
   --use-condition-fusion --condition-fusion-in-channels 7 \
   --fusion-control-types edge depth mask --control-weight 1.0 \
   --index-file dataset/porcelain_DIOR/inference_jsonl/test.jsonl --results-dir results/inference/DIOR \
