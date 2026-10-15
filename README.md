@@ -2,8 +2,6 @@
 
 **ISPRS Journal of Photogrammetry and Remote Sensing, 2026**
 
-Yueheng Yang, Bin Wang, Wenyan Ran, Ning Zhou, Minting Zhou, Jindi Wang, and Haigang Sui
-
 [Paper](https://doi.org/10.1016/j.isprsjprs.2026.09.048) · \
 [Repository](https://github.com/Bynus5/RamiGen-main-FRSMOD) · \
 [Overview](#overview) · \
